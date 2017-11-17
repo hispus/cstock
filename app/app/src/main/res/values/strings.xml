@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">cStock</string>
+    <string name="app_datacapture">Stock on Hand &amp; Resupply</string>
+    <string name="app_trackercapture">Stock Out</string>
+    <string name="app_dashboard">Dashboard</string>
+    <string name="logo_moh">Ministry of Health</string>
+    <string name="logo_jsi">John Snow Inc.</string>
+    <string name="logo_uio">University of Olso</string>
+ </resources>
