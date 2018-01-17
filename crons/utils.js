@@ -1,3 +1,26 @@
+PRODUCT_CODES = {
+  'ACT 6s':'AA',
+  'ACT 12s':'AB',
+  'ACT 18s':'AC',
+  'ACT 24s':'AD',
+  'Malaria Rapid Diagnostic Test Kit':'RD',
+  'RDT':'RD',
+  'Zinc Tablets':'ZN',
+  'Oral Rehydration Salt':'RS',
+  'Zinc/ORS Co-Pack':'ZR',
+  'Zinc/ORS':'ZR',
+  'Tetracycline Eye Ointment':'TE',
+  'Albendazole':'AL',
+  'Paracetamol':'PA',
+  'Chlorine':'CH',
+  'Amoxicillin':'AM',
+  'Male Condoms':'MC',
+  'COC':'CC',
+  'Iodine':'ID',
+  'Amoxicillin Dispensable Tablets':'AT',
+}
+
+
 /**
  * getConfig
  * Set up the DHIS2 connection
@@ -39,7 +62,7 @@ sendSMS = (config,numbers,message) => {
     }
 
     request.post({
-      url: config.baseUrl+'/api/26/sms/outbound',
+      url: config.baseUrl+'/api/sms/outbound',
       headers: {'Authorization': config.authorization},
       form: form,
       json:true
