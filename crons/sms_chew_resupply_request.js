@@ -61,36 +61,10 @@ const indexColumns = (json,codes) => {
   return columns;
 };
 
-/**
- * Find the CHEW attached to this OU
- * @param UID string
- */
-const getChew = async (UID) => {
-  let options = {
-      method: `GET`
-      ,json: true
-      ,uri: config.baseUrl+'/api/users.json?fields=displayName,phoneNumber&filter=userCredentials.userRoles.name:eq:CHEW&filter=organisationUnits.id:eq:'+UID
-      ,headers: {'Authorization': config.authorization}
-  };
-  let res = await rp(options);
-  return res;
-};
 
 
-/**
- * Find the CHV for this OU
- * @param UID string
- */
-const getCHV = async (UID) => {
-  let options = {
-      method: `GET`
-      ,json: true
-      ,uri: config.baseUrl+'/api/users.json?fields=displayName,phoneNumber,organisationUnits[id,name,parent[id,name]]&filter=userCredentials.userRoles.name:eq:CHV&filter=organisationUnits.id:eq:'+UID
-      ,headers: {'Authorization': config.authorization}
-  };
-  let res = await rp(options);
-  return res;
-};
+
+
 
 /**
  * Was any useful data given in the report

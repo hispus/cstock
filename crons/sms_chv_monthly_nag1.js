@@ -12,8 +12,8 @@ const utils = require('./utils');
 const SMS_MESSAGE = 'Dear CHV, your monthly cstock report is overdue, please send immediately.';
 const CHEW_MESSAGE = 'Dear CHEW, there are CHVs in your CHU who have not reported. Please look at the dashboard and follow up.';
 const MONTHLY_SOH_DATASETUID = 'z2slLbjn7PM';
-const OU_CHV_LEVEL = 6;
-const OU_CHEW_LEVEL = 5;
+const OU_CHV_LEVEL = 7;
+const OU_CHEW_LEVEL = 6;
 
 let dataValueSetCache = {};
 

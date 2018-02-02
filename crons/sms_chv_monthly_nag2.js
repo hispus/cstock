@@ -9,13 +9,12 @@ const request = require('request');
 const rp = require('request-promise-native');
 const utils = require('./utils');
 
-const SMS_MESSAGE = 'Dear CHV, your monthly cstock report is overdue, please send immediately.';
 const CHEW_MESSAGE = 'Dear CHEW, there are CHVs in your CHU who have not reported. Please look at the dashboard and follow up.';
 const HFIC_MESSAGE = 'Dear HFIC, there are CHVs in your CHU who have not reported. Please look at the dashboard and follow up.';
 
-const OU_CHV_LEVEL = 6;
-const OU_CHEW_LEVEL = 5;
-const OU_HFIC_LEVEL = 4;
+const OU_CHV_LEVEL = 7;
+const OU_CHEW_LEVEL = 6;
+const OU_HFIC_LEVEL = 5;
 
 let dataValueSetCache = {};
 
@@ -121,9 +120,7 @@ request({
     const period = calculatePeriod();
     //get map of CHVs phone numbers who have not reported yet
     processCHVs(config,b.users,period).then((chvNumbers)=>{
-      // let sms = Object.keys(chvNumbers);
-      // // inform the CVH that they are tardy
-      // utils.sendSMS(config,sms,SMS_MESSAGE);
+      // The CHVs themselves are not notified in this nag, but we need them to figure out who they report to
 
       //get the CHEWs for those CHVs
       //cache the list of OUs so we don't spam them
