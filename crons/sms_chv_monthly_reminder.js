@@ -6,54 +6,60 @@
  */
 
 const request = require('request');
-const utils = require('./utils');
+const common = require('./common');
 
 
 const SMS_MESSAGE = 'Dear CHV, your monthly cstock report is due in 1 day.';
-const OU_CHV_LEVEL = 7;
+const OU_CHV_LEVEL = 6;
 
-let config = utils.getConfig(process);
+let config = common.getConfig(process);
 if (!config.hasOwnProperty('baseUrl')){
   return 1;
 }
 
-request({
-  url: config.baseUrl+'/api/users?fields=displayName,phoneNumber,organisationUnits[id,level,name]&filter=userCredentials.userRoles.name:eq:CHV&paging=false',
-  headers: {'Authorization': config.authorization},
-  json:true
-}, (e,r,b)=>{
-  //check for errors
-  if (e || r.statusCode != 200) {
-    console.error('Failure to obtain CHVs:',e.message);
+common.getAllWithRole('CHV', config).then(chvs=> {
+  if (!chvs.hasOwnProperty('users') || chvs.users.length==0){
+    throw 'No CHVs in system';
   }
-  //looks good, continue
-  else{
-    //set up a cache of numbers
-    let numbers = {};
-    for (let i=0; i< b.users.length; i++) {
-      //make sure the CHV is assigned to a site
-      if (b.users[i].hasOwnProperty('organisationUnits') && b.users[i].organisationUnits.length>0){
-          //only accept CHVs at the appropriate OU level
-          for (let ou of b.users[i].organisationUnits){
-            if (ou.level==OU_CHV_LEVEL){
-              if (!b.users[i].phoneNumber){
-                console.error('sms_chv_monthly_reminder error: Phone number missing',b.users[i].displayName);
-              }
-              //make sure we don't spam someone and use up precious messages
-              else if (numbers.hasOwnProperty(b.users[i].phoneNumber)){
-                console.error('sms_chv_monthly_reminder error: Phone number duplication',b.users[i].phoneNumber);
-                //@TODO:: Notify someone about the phone# duplication
-              }
-              //good to go, add to sms list
-              else{
-                numbers[b.users[i].phoneNumber]=b.users[i].displayName;
-              }
+  //set up a cache of numbers
+  let numbers = {};
+
+  for (let chv of chvs.users) {
+    //make sure the CHV is assigned to a site
+    if (chv.hasOwnProperty('organisationUnits') && chv.organisationUnits.length>0){
+        //only accept CHVs at the appropriate OU level
+        for (let ou of chv.organisationUnits){
+          //strip spaces from the phoneNumber
+          if (ou.level==OU_CHV_LEVEL){
+            if (!chv.phoneNumber){
+              console.error('sms_chv_monthly_reminder error: Phone number missing: ',chv.displayName);
+              continue;
+            }
+            let phoneNumber = chv.phoneNumber.replace(/ /g,'');
+            if (!common.validatePhone(phoneNumber,'+254')){
+              console.error('sms_chv_monthly_reminder error: User phoneNumber malformed: ',chv.displayName,phoneNumber);
+            }
+            //make sure we don't spam someone and use up precious messages
+            else if (numbers.hasOwnProperty(phoneNumber) && chv.displayName==numbers[phoneNumber]){
+              console.error('sms_chv_monthly_reminder error: User assigned to multiple CHVs',chv.displayName);
+              //@TODO:: Notify someone about the phone# duplication
+            }
+            //make sure we don't spam someone and use up precious messages
+            else if (numbers.hasOwnProperty(phoneNumber)){
+              console.error('sms_chv_monthly_reminder error: Phone number duplication',chv.displayName,numbers[phoneNumber],phoneNumber);
+              //@TODO:: Notify someone about the phone# duplication
+            }
+            //good to go, add to sms list
+            else{
+              numbers[phoneNumber]=chv.displayName;
             }
           }
-      }
+        }
     }
-
-    //SMS all the things
-    utils.sendSMS(config,Object.keys(numbers),SMS_MESSAGE);
   }
+  //SMS all the things
+  common.sendSMS(config,Object.keys(numbers),SMS_MESSAGE);
+})
+.catch(e=>{
+  console.error('sms_chv_monthly_reminder error: ',e.message);
 });
