@@ -11,7 +11,7 @@
     "DHIS2",
     "BAO Systems"
   ],
-  "author": "Gregory Wilson <gwilson@baosystems.com",
+  "author": "Gregory Wilson <gwilson@baosystems.com>",
   "license": "SEE LICENSE IN license.md",
   "dependencies": {
     "request": "^2.83.0",

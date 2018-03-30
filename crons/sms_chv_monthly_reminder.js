@@ -36,7 +36,7 @@ common.getAllWithRole('CHV', config).then(chvs=> {
               continue;
             }
             let phoneNumber = chv.phoneNumber.replace(/ /g,'');
-            if (!common.validatePhone(phoneNumber,'+254')){
+            if (!common.validatePhone(phoneNumber,'+254',13)){
               console.error('sms_chv_monthly_reminder error: User phoneNumber malformed: ',chv.displayName,phoneNumber);
             }
             //make sure we don't spam someone and use up precious messages

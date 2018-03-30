@@ -54,7 +54,7 @@ const getAllWithRole = async (role, config) => {
   let options = {
       method: `GET`
       ,json: true
-      ,uri: config.baseUrl+'/api/users.json?paging=false&fields=displayName,phoneNumber,organisationUnits[id,name,level,parent[id,name]]&filter=userCredentials.disabled:eq:false&filter=userCredentials.userRoles.name:eq:'+role
+      ,uri: config.baseUrl+'/api/users.json?paging=false&fields=displayName,phoneNumber,organisationUnits[id,name,level,parent[id,name,parent[id,name]]&filter=userCredentials.disabled:eq:false&filter=userCredentials.userRoles.name:eq:'+role
       ,headers: {'Authorization': config.authorization}
   };
   let res = await rp(options);
@@ -70,7 +70,7 @@ const getRoleAtOU = async (UID, role, config) => {
   let options = {
       method: `GET`
       ,json: true
-      ,uri: config.baseUrl+'/api/users.json?paging=false&fields=displayName,phoneNumber,organisationUnits[id,name,level,parent[id,name]]&filter=userCredentials.disabled:eq:false&filter=userCredentials.userRoles.name:eq:'+role+'&filter=organisationUnits.id:eq:'+UID
+      ,uri: config.baseUrl+'/api/users.json?paging=false&fields=displayName,phoneNumber,organisationUnits[id,name,level,parent[id,name,parent[id,name]]&filter=userCredentials.disabled:eq:false&filter=userCredentials.userRoles.name:eq:'+role+'&filter=organisationUnits.id:eq:'+UID
       ,headers: {'Authorization': config.authorization}
   };
   let res = await rp(options);
@@ -95,11 +95,14 @@ const getDataValueSet = async (dsID, ouID, period, config) => {
 /**
  * make sure the phoneNumber is somewhat valid
  */
-const validatePhone = (phone,prefix) => {
+const validatePhone = (phone,prefix,len) => {
   if (phone.substr(0,4)!=prefix){
     return false;
   }
   if (phone.indexOf(' ')!=-1){
+    return false;
+  }
+  if (phone.length != len){
     return false;
   }
   return true;
@@ -111,22 +114,19 @@ const validatePhone = (phone,prefix) => {
  * @see https://docs.dhis2.org/2.26/en/developer/html/webapi_sms.html
  */
 sendSMS = (config,numbers,message) => {
+  const BULK_CHUNK = 100;
   if (numbers.length>0 && message!='') {
     let form = {"message":message};
 
-    if (numbers.length==1){
-      form.recipient = numbers[0];
-      privateSendSMS(config,form);
-    }
-    else if (numbers.length<=600){
+    if (numbers.length<=BULK_CHUNK){
       form.recipients = numbers;
       privateSendSMS(config,form);
     }
     else{
-      //break up the numbers into 600 message blocks
-      var i,j,temparray,chunk = 600;
-      for (i=0,j=numbers.length; i<j; i+=chunk) {
-          form.recipients = numbers.slice(i,i+chunk);
+      //break up the numbers into X message blocks
+      var i,j,temparray;
+      for (i=0,j=numbers.length; i<j; i+=BULK_CHUNK) {
+          form.recipients = numbers.slice(i,i+BULK_CHUNK);
           privateSendSMS(config,form);
       }
     }
@@ -135,7 +135,9 @@ sendSMS = (config,numbers,message) => {
 
 privateSendSMS = (config, form) => {
   // gertrude, eric
-  // form.recipients=['+254713142873','+254721926252'];
+  //form.recipients=['+254713142873'];
+  // console.log('sending to',form);
+  // return;
 
   request.post({
     url: config.baseUrl+'/api/sms/outbound',
@@ -145,7 +147,7 @@ privateSendSMS = (config, form) => {
   }, (e,r,b) =>{
     if (e || r.statusCode != 200) {
       //@TODO:: notify someone of SMS gateway failure
-      console.error("SMS Send Failure:",e,b.body);
+      console.error("SMS Send Failure:",b,r);
     }
     else{
       if (b.message=="SMS sent" || b.message=="Message sent"){
