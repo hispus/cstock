@@ -1,24 +1,22 @@
 /**
  *  sms_chv_monthly_nag2.js
- *  Remind all CHVs who have not submitted their Monthly CHV Stock on Hand Report
+ *  Remind all CHEW & Health Facility In Charges who have CHVs which have not submitted their Monthly CHV Stock on Hand Report for the previous month
  *  Usage: node sms_chv_monthly_nag2.js
-  * Note: This should be placed in a cron to run 2 days after the report due date
+  * Note: This should be placed in a cron to run 5 days after the report due date
  */
 
-const request = require('request');
-const rp = require('request-promise-native');
-const utils = require('./utils');
+const common = require('./common');
+const c = require('./constants');
 
 const CHEW_MESSAGE = 'Dear CHEW, there are CHVs in your CHU who have not reported. Please look at the dashboard and follow up.';
 const HFIC_MESSAGE = 'Dear HFIC, there are CHVs in your CHU who have not reported. Please look at the dashboard and follow up.';
-
-const OU_CHV_LEVEL = 7;
-const OU_CHEW_LEVEL = 6;
-const OU_HFIC_LEVEL = 5;
+const OU_CHV_LEVEL = 6;
+const OU_CHEW_LEVEL = 5;
+const OU_HFIC_LEVEL = 4;
 
 let dataValueSetCache = {};
 
-let config = utils.getConfig(process);
+let config = common.getConfig(process);
 if (!config.hasOwnProperty('baseUrl')){
   return 1;
 }
@@ -26,12 +24,11 @@ if (!config.hasOwnProperty('baseUrl')){
 /**
  * calculatePeriod
  * Figure out what the current period under consideration should be
- * Which in general is the current month -1
+ * Which in this case is for month -1 since the reports are requested late in the month
  */
 const calculatePeriod = () => {
   let d = prevMonth(new Date());
-
-  return d.getFullYear()+''+d.getMonth();
+  return d.getFullYear()+("0" + (d.getMonth() + 1)).slice(-2);
 }
 
 /**
@@ -39,60 +36,46 @@ const calculatePeriod = () => {
  * been updated
  */
 const processCHVs = async (config, users, period) => {
-  let phoneNumbers = {};
+  let numbers = {};
   for (let user of users) {
-    userloop:  //label for breaking
     try{
       if (user.hasOwnProperty('organisationUnits') && user.organisationUnits.length>0){
+
         //they might have multiple OUs. Find the one they are CHV at
         let this_ou = false;
         for (let ou of user.organisationUnits) {
           //only deal with CHVs at OUs on the bottom level
-          if(ou.level!=OU_CHV_LEVEL){
+          if(ou.level==OU_CHV_LEVEL){
+              this_ou = ou;
               continue;
           }
-          ouloop:
-          for (let u of ou.users) {
-            if (u.id=user.id){
-              if (u.hasOwnProperty('userCredentials') && u.userCredentials.hasOwnProperty('userRoles') && u.userCredentials.userRoles.length>0){
-                for (let ur of u.userCredentials.userRoles) {
-                  if (ur.name==='CHV'){
-                    this_ou = ou;
-                    break ouloop;
-                  }
-                }
-              }
-            }
-          }
         }
+
         if (this_ou == false) {
           //they are associated with this OU but not as a CHV, skip to the next user
           continue;
         }
 
-        if (user.phoneNumber == undefined){
-          console.error('sms_chv_monthly_nag2 error: Phone number missing',user.id,user.displayName);
-          //@TODO:: Notify someone about the missing phone#
-          continue;
-        }
+        //irrelevant if the chv has a phone number since we are notifying the CHEW/HFIC
+        // if (user.phoneNumber == undefined){
+        //   console.error('sms_chv_monthly_nag2 error: Phone number missing',user.id,user.displayName);
+        //   //@TODO:: Notify someone about the missing phone#
+        //   continue;
+        // }
+
         let dvs = {}
         if (dataValueSetCache.hasOwnProperty(this_ou.id+period)){
-          dvs=dataValueSetCache[ouID+period];
+          dvs=dataValueSetCache[this_ou.id+period];
         }
         else{
-          dvs = await utils.getMonthlySOHReports(config,this_ou.id,period);
+          dvs = await common.getDataValueSet(c.MONTHLY_SOH_DATASETUID,this_ou.id,period,config);
           dataValueSetCache[this_ou.id+period] = dvs;
         }
+
         if (!dvs.hasOwnProperty('dataValues')){
           //they did NOT submit for this period, add them to the list
-          //make sure we don't spam someone and use up precious messages
-          if (phoneNumbers.hasOwnProperty(user.phoneNumber)){
-            console.error('sms_chv_monthly_nag2 error: Phone number duplication',user.phoneNumber);
-            //@TODO:: Notify someone about the phone# duplication
-            continue;
-          }
           //good to go, add to sms list
-          phoneNumbers[user.phoneNumber]=user;
+          numbers[user.phoneNumber]=user;
         }
         else{
         }
@@ -102,78 +85,86 @@ const processCHVs = async (config, users, period) => {
       console.error('sms_chv_monthly_nag2 error: processCHVs user: '+user.displayName,e.message);
     }
   }
-  return phoneNumbers;
+  return numbers;
 };
 
 //get all the CHVs
-request({
-  url: config.baseUrl+'/api/users?fields=id,displayName,phoneNumber,organisationUnits[id,name,level,users[id,userCredentials[user.id,userRoles[name]]],parent[id,name,level,parent[id,name,level]]]&filter=userCredentials.userRoles.name:eq:CHV&paging=false',
-  headers: {'Authorization': config.authorization},
-  json:true
-}, (e,r,b)=>{
-  //check for errors
-  if (e || r.statusCode != 200) {
-    console.error('sms_chv_monthly_nag2 error: Failure to obtain CHVs:',r.statusCode,r.statusMessage);
+common.getAllWithRole('CHV', config).then(chvs=> {
+  if (!chvs.hasOwnProperty('users') || chvs.users.length==0){
+    throw 'No CHVs in system';
   }
-  //looks good, continue
-  else{
-    const period = calculatePeriod();
-    //get map of CHVs phone numbers who have not reported yet
-    processCHVs(config,b.users,period).then((chvNumbers)=>{
-      // The CHVs themselves are not notified in this nag, but we need them to figure out who they report to
 
-      //get the CHEWs for those CHVs
-      //cache the list of OUs so we don't spam them
-      let ous = {};
-      let ous_hfic = {};
-      let chews = {};
-      for (let number in chvNumbers) {
-        //re-find the CHV site
-        for (let ou of chvNumbers[number].organisationUnits) {
-          if (ou.level==OU_CHV_LEVEL){
-            ous[ou.parent.id]=ou.parent;
-          }
+  const period = calculatePeriod();
+
+  //get map of CHVs phone numbers who have not reported yet
+  processCHVs(config,chvs.users,period).then((chvNumbers)=>{
+    // The CHVs themselves are not notified in this nag, but we need them to figure out who they report to
+
+    //get the CHEWs for those CHVs
+    //cache the list of OUs so we don't spam them
+    let ous = {};
+    let chews = {};
+    for (let number in chvNumbers) {
+      //re-find the CHV site
+      for (let ou of chvNumbers[number].organisationUnits) {
+        if (ou.level==OU_CHV_LEVEL){
+          ous[ou.parent.id]=ou.parent;
         }
       }
-      let oukeys = Object.keys(ous);
-      for (let ouid of oukeys){
-        utils.getChew(ouid,config).then(chews=>{
-          if (!chews.hasOwnProperty('users') || chews.users.length==0){
-            throw 'OU '+ouid+' lacks a CHEW';
-          }
-          for (let chew of chews.users) {
-            if (!chew.hasOwnProperty('phoneNumber') || chew.phoneNumber==''){
-              throw 'CHEW '+chew.displayName+' lacks a phoneNumber';
-            }
-            utils.sendSMS(config,[chew.phoneNumber],CHEW_MESSAGE);
-          }
-        }).catch(e=>{
-          console.error('sms_chv_monthly_nag2 error obtaining CHEW: ',e)
-        });
-        //record the HFIC OU while we are here
-        ous_hfic[ous[ouid].parent.id]=ous[ouid].parent;
-      }
-      //get the HFIC contact
-      let hcifkeys = Object.keys(ous_hfic);
-      for (let ouid of oukeys){
-        utils.getHFIC(ouid,config).then(hfics=>{
-          if (!hfics.hasOwnProperty('users') || hfics.users.length==0){
-            throw 'OU '+ouid+' lacks a HFIC';
-          }
-          for (let hfic of hfics.users) {
-            if (!hfic.hasOwnProperty('phoneNumber') || hfic.phoneNumber==''){
-              throw 'HFIC '+hfic.displayName+' lacks a phoneNumber';
-            }
-            utils.sendSMS(config,[hfic.phoneNumber],HFIC_MESSAGE);
-          }
-        }).catch(e=>{
-          console.error('sms_chv_monthly_nag2 error obtaining HFIC: ',e)
-        });
-      }
+    }
 
-    })
-    .catch(e =>{
-      console.error("sms_chv_monthly_nag2 error: ",e);
-    });
-  }
+    let oukeys = Object.keys(ous);
+    let ous_hfic = {};
+    for (let ouid of oukeys){
+      common.getRoleAtOU(ouid, 'CHEW', config).then(chews=> {
+        if (!chews.hasOwnProperty('users') || chews.users.length==0){
+          throw 'OU '+ouid+' lacks a CHEW';
+        }
+        for (let chew of chews.users) {
+          if (!chew.hasOwnProperty('phoneNumber') || chew.phoneNumber==''){
+            throw 'CHEW '+chew.displayName+' lacks a phoneNumber';
+          }
+          let phoneNumber = chew.phoneNumber.replace(/ /g,'');
+          if (!common.validatePhone(phoneNumber,'+254',13)){
+            throw 'CHEW phoneNumber malformed: '+chew.displayName+ ' ' +phoneNumber;
+          }
+          common.sendSMS(config,[phoneNumber],CHEW_MESSAGE);
+        }
+      }).catch(e=>{
+        console.error('sms_chv_monthly_nag2 error obtaining CHEW: ',e)
+      });
+      //record the HFIC OU while we are here
+      ous_hfic[ous[ouid].parent.id]=ous[ouid].parent;
+    } //end chew OU loop
+
+    //get the HFIC contact
+    let hcifkeys = Object.keys(ous_hfic);
+    for (let ouid of oukeys){
+      common.getRoleAtOU(ouid, 'HFIC', config).then(hfics=> {
+        if (!hfics.hasOwnProperty('users') || hfics.users.length==0){
+          throw 'OU '+ouid+' lacks a HFIC';
+        }
+        for (let hfic of hfics.users) {
+          if (!hfic.hasOwnProperty('phoneNumber') || hfic.phoneNumber==''){
+            throw 'HFIC '+hfic.displayName+' lacks a phoneNumber';
+          }
+          let phoneNumber = hfic.phoneNumber.replace(/ /g,'');
+          if (!common.validatePhone(phoneNumber,'+254',13)){
+            throw 'HFIC phoneNumber malformed: '+hfic.displayName+ ' ' +phoneNumber;
+          }
+          common.sendSMS(config,[phoneNumber],HFIC_MESSAGE);
+        }
+      }).catch(e=>{
+        console.error('sms_chv_monthly_nag2 error obtaining HFIC: ',e)
+      });
+    } //end HFIC OU loop
+
+  }) //end processCHVs
+  .catch(e =>{
+    console.error("sms_chv_monthly_nag2 error: ",e);
+  });
+
+})
+.catch(e=>{
+  console.error('sms_chv_monthly_nag2 error: ',e);
 });

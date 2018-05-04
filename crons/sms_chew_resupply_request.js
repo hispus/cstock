@@ -1,12 +1,12 @@
 /**
+ * DEPRECATED (cannot find this on the `cStock Messages.xlxs` spreadsheet)
  *  sms_chew_resupply_request.js
  *  Let the CHEW know that a CHV needs supplies
  */
 
 const request = require('request');
 const rp = require('request-promise-native');
-
-require('./utils');
+const common = require('./common');
 
 const SMS_MESSAGE = 'Dear CHEW, [CHV_name] requires the following supplies: [SUPPLIES]. Please record on your resupply worksheet.';
 const REPORT_UID = 'XYWsxvJwgwp';
@@ -61,11 +61,6 @@ const indexColumns = (json,codes) => {
   return columns;
 };
 
-
-
-
-
-
 /**
  * Was any useful data given in the report
  * @param cols Object
@@ -97,7 +92,7 @@ getReportTable(REPORT_UID).then(res=> {
       continue;
     }
     //get the chv name for this OU
-    getCHV(ouid).then(chvs =>{
+    common.getRoleAtOU(ouid,'CHV',config).then(chvs =>{
 
       if (!chvs.hasOwnProperty('users') || chvs.users.length==0){
         console.error('sms_chew_resupply_request error: CHV processing: No CHV for OU '+ouid);
@@ -124,7 +119,7 @@ getReportTable(REPORT_UID).then(res=> {
       }
 
       //get the CHEW for this OU by getting the parent
-      getChew(ou.parent.id).then(res=> {
+      common.getRoleAtOU(ou.parent.id, 'CHEW', config).then(res=> {
         if (res.hasOwnProperty('users') && res.users.length>0 ) {
           let message = SMS_MESSAGE;
           //replace [CHV_name]
