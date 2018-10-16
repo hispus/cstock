@@ -24,10 +24,10 @@ sed -i '' "s#\>DHIS2 Dashboard#\>cStock DHIS2 Dashboard#" app/src/main/res/value
 sed -i '' "s#ButterKnife.bind(this);#ButterKnife.bind(this); mServerUrl.setText(\"$SERVER\");#" app/src/main/java/org/hisp/dhis/android/dashboard/ui/activities/LoginActivity.java
 
 # replace some icons
-cp ../images/dashboard/mipmap-hdpi/* app/src/main/res/mipmap-mdpi/
-cp ../images/dashboard/mipmap-mdpi/* app/src/main/res/mipmap-hdpi/
-cp ../images/dashboard/mipmap-xhdpi/* app/src/main/res/mipmap-xhdpi/
-cp ../images/dashboard/mipmap-xxhdpi/* app/src/main/res/mipmap-xxhdpi/
+cp ../../images/dashboard/mipmap-hdpi/* app/src/main/res/mipmap-mdpi/
+cp ../../images/dashboard/mipmap-mdpi/* app/src/main/res/mipmap-hdpi/
+cp ../../images/dashboard/mipmap-xhdpi/* app/src/main/res/mipmap-xhdpi/
+cp ../../images/dashboard/mipmap-xxhdpi/* app/src/main/res/mipmap-xxhdpi/
 # build
 ./gradlew build
 cp app/build/outputs/apk/app-debug.apk ../dashboard-cstock.apk
@@ -43,10 +43,10 @@ sed -i '' "s#\"$DC\"#\"$DC_C\"#g" dhis2-android-app/build.gradle
 sed -i '' "s#DHIS2 Data Capture#cStock DHIS2 Resupply#" dhis2-android-app/src/main/res/values/strings.xml
 sed -i '' "s#.*mServerUrl.addTextChangedListener.*#mServerUrl.setText(\"$SERVER\"); &#" dhis2-android-app/src/main/java/org/dhis2/mobile/ui/activities/LoginActivity.java
 # replace some icons
-cp ../images/dashboard/mipmap-hdpi/* dhis2-android-app/src/main/res/drawable-hdpi/
-cp ../images/dashboard/mipmap-mdpi/* dhis2-android-app/src/main/res/drawable-mdpi/
-cp ../images/dashboard/mipmap-xhdpi/* dhis2-android-app/src/main/res/drawable-xhdpi/
-cp ../images/dashboard/mipmap-xxhdpi/* dhis2-android-app/src/main/res/drawable-xxhdpi/
+cp ../../images/dashboard/mipmap-hdpi/* dhis2-android-app/src/main/res/drawable-hdpi/
+cp ../../images/dashboard/mipmap-mdpi/* dhis2-android-app/src/main/res/drawable-mdpi/
+cp ../../images/dashboard/mipmap-xhdpi/* dhis2-android-app/src/main/res/drawable-xhdpi/
+cp ../../images/dashboard/mipmap-xxhdpi/* dhis2-android-app/src/main/res/drawable-xxhdpi/
 # build
 ./gradlew build
 cp dhis2-android-app/build/outputs/apk/dhis2-android-app-debug.apk ../datacapture-cstock.apk
@@ -73,10 +73,10 @@ sed -i '' "s#DHIS 2 Tracker Capture#cStock DHIS2 StockOut#" app/src/main/res/val
 sed -i '' "s#DHIS 2 Tracker Capture#cStock DHIS2 StockOut#" app/src/main/res/values/strings.xml~
 sed -i '' "s#server = \"https:\/\/\"#server = \"$SERVER\"#" sdk/core/src/main/java/org/hisp/dhis/android/sdk/ui/activities/LoginActivity.java
 # replace some icons
-cp ../images/trackercapture/mipmap-hdpi/* app/src/main/res/drawable-hdpi/
-cp ../images/trackercapture/mipmap-mdpi/* app/src/main/res/drawable-mdpi/
-cp ../images/trackercapture/mipmap-xhdpi/* app/src/main/res/drawable-xhdpi/
-cp ../images/trackercapture/mipmap-xxhdpi/* app/src/main/res/drawable-xxhdpi/
+cp ../../images/trackercapture/mipmap-hdpi/* app/src/main/res/drawable-hdpi/
+cp ../../images/trackercapture/mipmap-mdpi/* app/src/main/res/drawable-mdpi/
+cp ../../images/trackercapture/mipmap-xhdpi/* app/src/main/res/drawable-xhdpi/
+cp ../../images/trackercapture/mipmap-xxhdpi/* app/src/main/res/drawable-xxhdpi/
 # build
 ./gradlew build
 cp app/build/outputs/apk/app-debug.apk ../trackercapture-cstock.apk
