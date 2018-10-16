@@ -1,2 +1,6 @@
 .DS_Store
 core-apps
+core-prod-apps
+node_modules
+.DS_Store
+cStockReact/ios
