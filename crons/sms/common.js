@@ -135,7 +135,7 @@ sendSMS = (config,numbers,message) => {
 
 privateSendSMS = (config, form) => {
   // gertrude, eric
-  //form.recipients=['+254713142873'];
+  // form.recipients=['+254713142873'];
   // console.log('sending to',form);
   // return;
 
