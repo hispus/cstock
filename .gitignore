@@ -4,3 +4,4 @@ core-prod-apps
 node_modules
 .DS_Store
 cStockReact/ios
+config.php

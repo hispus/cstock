@@ -1,0 +1,5 @@
+<?php
+  // DHIS2 server that will be processing the SMS messages
+  $config["server"] = "https://kecstock.jsi.com/api/sms/inbound";
+  // Super secret DHIS2 credentials
+  $config["authentication"] = "smsapi:XXXXXXXXXXXXXXX";
