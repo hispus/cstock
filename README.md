@@ -20,7 +20,7 @@ The SMS bridge is a cludge to enable AfricasTalking SMS Api to properly insert d
 
 1. Place the `index.php` file into the webroot of the server.
 1. Copy `config.php.default` to `config.php` and edit the values accordingly.
-1. Log into [AfricasTalking api](https://account.africastalking.com/auth/login) to
+1. Log into [AfricasTalking api](https://account.africastalking.com/auth/login) to point their POST to the server you deployed this to.
 
 
 ## SMS Cron Jobs
