@@ -37,3 +37,9 @@ Directory: `cStockReact`
 
 A ReactJS based Android app that launches the custom built cStock DHIS2 apps.
 Build script is in root directory.
+
+## cStock Analytics update
+
+File: cstock-daily.py
+
+A python3 script to run daily, performing two tasks: (1) If monthly stocks have been received against a stockout, it automatically closes out the stockout, (2) Runs the cstock predictors, so the DHIS2 analytics data is up to date.
